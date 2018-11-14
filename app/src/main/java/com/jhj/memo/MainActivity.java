@@ -5,8 +5,8 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
-import com.jhj.calendarevent.model.CalendarAccount;
 import com.jhj.calendarevent.CalendarEvent;
+import com.jhj.calendarevent.model.CalendarAccount;
 import com.jhj.calendarevent.model.ScheduleEventBean;
 import com.jhj.permissionscheck.OnPermissionsListener;
 import com.jhj.permissionscheck.PermissionsRequest;
@@ -66,8 +66,8 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void onPermissions(List<String> list, List<String> list1) {
                                 if (list.size() == 0) {
-                                    int a = CalendarEvent.delete(MainActivity.this, "title1", startMills);
-                                    if (a == -1) {
+                                    boolean isSuccess = CalendarEvent.delete(MainActivity.this, "title1", startMills);
+                                    if (!isSuccess) {
                                         //删除失败
                                     }
                                 }
@@ -82,8 +82,8 @@ public class MainActivity extends AppCompatActivity {
     private void update() {
         ScheduleEventBean bean = new ScheduleEventBean();
         bean.setTitle("title1");
-        int a = CalendarEvent.update(this, "title", startMills, bean);
-        if (a == -1) {
+        boolean isSuccess = CalendarEvent.update(this, "title", startMills, bean);
+        if (!isSuccess) {
             //修改失败
         }
     }
@@ -97,8 +97,8 @@ public class MainActivity extends AppCompatActivity {
                 .setLocation("location")
                 .setStartTime(startMills)
                 .setEndTime(System.currentTimeMillis() + 500000);
-        boolean a = CalendarEvent.insert(this, "displayName", bean);
-        if (a) {
+        boolean isSuccess = CalendarEvent.insert(this, "displayName", bean);
+        if (isSuccess) {
             //添加成功
         }
     }

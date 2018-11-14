@@ -20,21 +20,25 @@ public class CalendarEvent {
 
 
     private static CalendarAccount account;
-    private static boolean isCalenderAlarm = true;
     private static int aheadOfTime;
 
     public static void init(CalendarAccount account) {
         CalendarEvent.account = account;
     }
 
-    public static void setCalenderAlarm(boolean isCalenderAlarm) {
-        CalendarEvent.isCalenderAlarm = isCalenderAlarm;
-    }
 
     public static void setCalenderAlarmAheadTime(int aheadOfTime) {
         CalendarEvent.aheadOfTime = aheadOfTime;
     }
 
+    /**
+     * 日历事件创建
+     *
+     * @param mContext    mContext
+     * @param displayName 显示在日历上的名称
+     * @param schedule    日历事件详情
+     * @return　boolean 事件是否创建成功
+     */
     public static boolean insert(Context mContext, String displayName, ScheduleEventBean schedule) {
         if (account == null) {
             throw new NullPointerException("CalendarEvent must be init()");
@@ -59,40 +63,53 @@ public class CalendarEvent {
         return false;
     }
 
-    public static int update(Context mContext, String title, long startMills, ScheduleEventBean schedule) {
-        int id = search(mContext, title, startMills);
+    /**
+     * 日历事件修改
+     *
+     * @param mContext         Context
+     * @param searchTitle      要搜索日历事件的标题
+     * @param searchStartMills 　要搜索日历事件的开始时间
+     * @param schedule         　日历事件详情
+     * @return boolean 事件是否修改成功
+     */
+    public static boolean update(Context mContext, String searchTitle, long searchStartMills, ScheduleEventBean schedule) {
+        int id = search(mContext, searchTitle, searchStartMills);
         if (id == -1) {
-            return -1;
+            return false;
         }
         Uri updateUri = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, id);
         ContentValues up = updateCalendarEvent(schedule);
-        return mContext.getContentResolver().update(updateUri, up, null, null);
+        int updateResult = mContext.getContentResolver().update(updateUri, up, null, null);
+        return updateResult != -1;
     }
 
     /**
      * 根据id删除
      *
-     * @param mContext Context
-     * @param title    titel
+     * @param mContext         Context
+     * @param searchTitle      要搜索日历事件的标题
+     * @param searchStartMills 　要搜索日历事件的开始时间
+     * @return boolean 事件是否删除成功
      */
-    public static int delete(Context mContext, String title, long startMills) {
-        int id = search(mContext, title, startMills);
+    public static boolean delete(Context mContext, String searchTitle, long searchStartMills) {
+        int id = search(mContext, searchTitle, searchStartMills);
         if (id == -1) {
-            return -1;
+            return false;
         }
         Uri deleteUri = ContentUris.withAppendedId(Uri.parse(Config.CALENDAR_EVENT_URL), id);
-        return mContext.getContentResolver().delete(deleteUri, null, null);
+        int deleteResult = mContext.getContentResolver().delete(deleteUri, null, null);
+        return deleteResult != -1;
     }
 
     /**
      * 根据设置的title和开始事件来查找id
      *
      * @param mContext         Context
-     * @param searchTitle      标题
-     * @param searchStartMills 　开始事件
+     * @param searchTitle      要搜索日历事件的标题
+     * @param searchStartMills 　要搜索日历事件的开始时间
      * @return　事件id
      */
-    private static int search(Context mContext, String searchTitle, long searchStartMills) {
+    public static int search(Context mContext, String searchTitle, long searchStartMills) {
         Cursor eventCursor = mContext.getContentResolver().query(Uri.parse(Config.CALENDAR_EVENT_URL), null, null, null, null);
         try {
             if (eventCursor == null)//查询返回空值
@@ -136,9 +153,10 @@ public class CalendarEvent {
     /**
      * 创建日历事件
      *
-     * @param mContext mContext
-     * @param schedule ScheduleEventBean
-     * @return
+     * @param mContext    mContext
+     * @param displayName 显示在日历上的名称
+     * @param schedule    ScheduleEventBean
+     * @return 返回null时，创建日历事件失败
      */
     private static Uri addCalendarEvent(Context mContext, String displayName, ScheduleEventBean schedule) {
         int account = checkAndAddCalendarAccount(mContext, displayName);
@@ -148,7 +166,7 @@ public class CalendarEvent {
             throw new NullPointerException("title field must not be null when used in class ScheduleEventBean");
         }
         if (schedule.getStartTime() == 0) {
-
+            throw new NullPointerException("startTime field must not be 0 when used in class ScheduleEventBean");
         }
 
         ContentValues contentValues = new ContentValues();
@@ -165,9 +183,7 @@ public class CalendarEvent {
         //  事件结束时间
         contentValues.put(CalendarContract.Events.DTEND, schedule.getEndTime());
         //  设置有闹钟提醒
-        if (isCalenderAlarm) {
-            contentValues.put(CalendarContract.Events.HAS_ALARM, 1);
-        }
+        contentValues.put(CalendarContract.Events.HAS_ALARM, 1);
         //  设置提示规则
         if (schedule.getRule() != null) {
             contentValues.put(CalendarContract.Events.RRULE, schedule.getRule());
@@ -207,9 +223,6 @@ public class CalendarEvent {
         //  事件结束时间
         if (schedule.getEndTime() != 0)
             contentValues.put(CalendarContract.Events.DTEND, schedule.getEndTime());
-        //  设置有闹钟提醒
-        if (isCalenderAlarm)
-            contentValues.put(CalendarContract.Events.HAS_ALARM, 1);
         //  设置提示规则
         if (schedule.getRule() != null)
             contentValues.put(CalendarContract.Events.RRULE, schedule.getRule());
@@ -284,13 +297,13 @@ public class CalendarEvent {
     private static long addCalendarAccount(Context mContext, String displayName) {
 
         if (account.getCalendarName() == null) {
-            throw new NullPointerException("The calendarName field of the CalendarAccount method must be initialized");
+            throw new NullPointerException("The calendarName field of the CalendarAccount method must not be null");
         }
         if (account.getCalendarAccountName() == null) {
-            throw new NullPointerException("The calendarAccountName field of the CalendarAccount method must be initialized");
+            throw new NullPointerException("The calendarAccountName field of the CalendarAccount method must not be null");
         }
         if (account.getCalendarAccountType() == null) {
-            throw new NullPointerException("The calendarAccountType field of the CalendarAccount method must be initialized");
+            throw new NullPointerException("The calendarAccountType field of the CalendarAccount method must not be null");
         }
 
 
