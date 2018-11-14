@@ -1,4 +1,4 @@
-package com.jhj.calendarevent;
+package com.jhj.calendarevent.model;
 
 public class ScheduleEventBean {
 
@@ -23,44 +23,60 @@ public class ScheduleEventBean {
      */
     private long endTime;
 
+    private String rule;
+
 
     public String getTitle() {
         return title;
     }
 
-    public void setTitle(String title) {
+    public ScheduleEventBean setTitle(String title) {
         this.title = title;
+        return this;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public ScheduleEventBean setDescription(String description) {
         this.description = description;
+        return this;
     }
 
     public String getLocation() {
         return location;
     }
 
-    public void setLocation(String location) {
+    public ScheduleEventBean setLocation(String location) {
         this.location = location;
+        return this;
     }
 
     public long getStartTime() {
         return startTime;
     }
 
-    public void setStartTime(long startTime) {
+    public ScheduleEventBean setStartTime(long startTime) {
         this.startTime = startTime;
+        return this;
     }
 
     public long getEndTime() {
         return endTime;
     }
 
-    public void setEndTime(long endTime) {
+    public ScheduleEventBean setEndTime(long endTime) {
         this.endTime = endTime;
+        return this;
+    }
+
+    public String getRule() {
+        return rule;
+    }
+
+    public ScheduleEventBean setRule(String rule) {
+        this.rule = rule;
+        return this;
     }
 }

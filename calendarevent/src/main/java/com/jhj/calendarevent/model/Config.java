@@ -1,4 +1,4 @@
-package com.jhj.calendarevent;
+package com.jhj.calendarevent.model;
 
 public class Config {
 

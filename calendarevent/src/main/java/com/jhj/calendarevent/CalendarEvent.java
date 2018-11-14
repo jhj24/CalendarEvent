@@ -10,6 +10,10 @@ import android.net.Uri;
 import android.provider.CalendarContract;
 import android.text.TextUtils;
 
+import com.jhj.calendarevent.model.CalendarAccount;
+import com.jhj.calendarevent.model.Config;
+import com.jhj.calendarevent.model.ScheduleEventBean;
+
 import java.util.TimeZone;
 
 public class CalendarEvent {
@@ -31,17 +35,15 @@ public class CalendarEvent {
         CalendarEvent.aheadOfTime = aheadOfTime;
     }
 
-    public static void insert(Context mContext, String displayName, ScheduleEventBean schedule) {
+    public static boolean insert(Context mContext, String displayName, ScheduleEventBean schedule) {
         if (account == null) {
             throw new NullPointerException("CalendarEvent must be init()");
         }
 
-
         try {
             Uri calendarEvent = addCalendarEvent(mContext, displayName, schedule);
-            if (isCalenderAlarm) {
-                addCalendarAlarm(mContext, calendarEvent);
-            }
+            Uri alarmCalendarEvent = addCalendarAlarm(mContext, calendarEvent);
+            return alarmCalendarEvent != null;
         } catch (Exception e) {
             e.printStackTrace();
             Intent intent = new Intent(Intent.ACTION_INSERT)
@@ -54,31 +56,54 @@ public class CalendarEvent {
                     .putExtra(CalendarContract.Reminders.MINUTES, aheadOfTime);
             mContext.startActivity(intent);
         }
+        return false;
+    }
+
+    public static int update(Context mContext, String title, long startMills, ScheduleEventBean schedule) {
+        int id = search(mContext, title, startMills);
+        if (id == -1) {
+            return -1;
+        }
+        Uri updateUri = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, id);
+        ContentValues up = updateCalendarEvent(schedule);
+        return mContext.getContentResolver().update(updateUri, up, null, null);
     }
 
     /**
-     * 根据设置的title来查找并删除
+     * 根据id删除
      *
      * @param mContext Context
      * @param title    titel
      */
-    public static void deleteCalendarEvent(Context mContext, String title) {
+    public static int delete(Context mContext, String title, long startMills) {
+        int id = search(mContext, title, startMills);
+        if (id == -1) {
+            return -1;
+        }
+        Uri deleteUri = ContentUris.withAppendedId(Uri.parse(Config.CALENDAR_EVENT_URL), id);
+        return mContext.getContentResolver().delete(deleteUri, null, null);
+    }
+
+    /**
+     * 根据设置的title和开始事件来查找id
+     *
+     * @param mContext         Context
+     * @param searchTitle      标题
+     * @param searchStartMills 　开始事件
+     * @return　事件id
+     */
+    private static int search(Context mContext, String searchTitle, long searchStartMills) {
         Cursor eventCursor = mContext.getContentResolver().query(Uri.parse(Config.CALENDAR_EVENT_URL), null, null, null, null);
         try {
             if (eventCursor == null)//查询返回空值
-                return;
+                return -1;
             if (eventCursor.getCount() > 0) {
                 //遍历所有事件，找到title跟需要查询的title一样的项
                 for (eventCursor.moveToFirst(); !eventCursor.isAfterLast(); eventCursor.moveToNext()) {
-                    String eventTitle = eventCursor.getString(eventCursor.getColumnIndex("title"));
-                    if (!TextUtils.isEmpty(title) && title.equals(eventTitle)) {
-                        int id = eventCursor.getInt(eventCursor.getColumnIndex(CalendarContract.Calendars._ID));//取得id
-                        Uri deleteUri = ContentUris.withAppendedId(Uri.parse(Config.CALENDAR_EVENT_URL), id);
-                        int rows = mContext.getContentResolver().delete(deleteUri, null, null);
-                        if (rows == -1) {
-                            //事件删除失败
-                            return;
-                        }
+                    String eventTitle = eventCursor.getString(eventCursor.getColumnIndex(CalendarContract.Events.TITLE));
+                    long eventStartTime = eventCursor.getLong(eventCursor.getColumnIndex(CalendarContract.Events.DTSTART));
+                    if (!TextUtils.isEmpty(searchTitle) && searchTitle.equals(eventTitle) && searchStartMills == eventStartTime) {
+                        return eventCursor.getInt(eventCursor.getColumnIndex(CalendarContract.Calendars._ID));
                     }
                 }
             }
@@ -87,7 +112,9 @@ public class CalendarEvent {
                 eventCursor.close();
             }
         }
+        return -1;
     }
+
 
     /**
      * 添加闹铃
@@ -95,7 +122,7 @@ public class CalendarEvent {
      * @param mContext mContext
      * @param event    Uri
      */
-    private static void addCalendarAlarm(Context mContext, Uri event) {
+    private static Uri addCalendarAlarm(Context mContext, Uri event) {
         //  事件提醒的设定
         ContentValues contentValues = new ContentValues();
         //  事件的ID
@@ -103,7 +130,7 @@ public class CalendarEvent {
         //  准时提醒    提前0分钟提醒
         contentValues.put(CalendarContract.Reminders.MINUTES, aheadOfTime);
         contentValues.put(CalendarContract.Reminders.METHOD, CalendarContract.Reminders.METHOD_ALERT);
-        mContext.getContentResolver().insert(Uri.parse(Config.CALENDAR_REMIND_URL), contentValues);
+        return mContext.getContentResolver().insert(Uri.parse(Config.CALENDAR_REMIND_URL), contentValues);
     }
 
     /**
@@ -117,6 +144,13 @@ public class CalendarEvent {
         int account = checkAndAddCalendarAccount(mContext, displayName);
         if (account < 0)
             return null;
+        if (schedule.getTitle() == null) {
+            throw new NullPointerException("title field must not be null when used in class ScheduleEventBean");
+        }
+        if (schedule.getStartTime() == 0) {
+
+        }
+
         ContentValues contentValues = new ContentValues();
         // 事件的日历_ID。
         contentValues.put(CalendarContract.Events.CALENDAR_ID, account);
@@ -131,11 +165,56 @@ public class CalendarEvent {
         //  事件结束时间
         contentValues.put(CalendarContract.Events.DTEND, schedule.getEndTime());
         //  设置有闹钟提醒
-        contentValues.put(CalendarContract.Events.HAS_ALARM, 1);
+        if (isCalenderAlarm) {
+            contentValues.put(CalendarContract.Events.HAS_ALARM, 1);
+        }
+        //  设置提示规则
+        if (schedule.getRule() != null) {
+            contentValues.put(CalendarContract.Events.RRULE, schedule.getRule());
+        }
         //  事件时区
         contentValues.put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().getID());
         //  返回事件
+
         return mContext.getContentResolver().insert(Uri.parse(Config.CALENDAR_EVENT_URL), contentValues);
+
+    }
+
+    /**
+     * 修改日历事件
+     *
+     * @param schedule ScheduleEventBean
+     * @return ContentValues
+     */
+    private static ContentValues updateCalendarEvent(ScheduleEventBean schedule) {
+        ContentValues contentValues = new ContentValues();
+        if (schedule == null) {
+            return contentValues;
+        }
+
+        //  事件标题
+        if (schedule.getTitle() != null)
+            contentValues.put(CalendarContract.Events.TITLE, schedule.getTitle());
+        //  事件发生的地点
+        if (schedule.getLocation() != null)
+            contentValues.put(CalendarContract.Events.EVENT_LOCATION, schedule.getLocation());
+        //  事件描述
+        if (schedule.getDescription() != null)
+            contentValues.put(CalendarContract.Events.DESCRIPTION, schedule.getDescription());
+        //  事件开始时间
+        if (schedule.getStartTime() != 0)
+            contentValues.put(CalendarContract.Events.DTSTART, schedule.getStartTime());
+        //  事件结束时间
+        if (schedule.getEndTime() != 0)
+            contentValues.put(CalendarContract.Events.DTEND, schedule.getEndTime());
+        //  设置有闹钟提醒
+        if (isCalenderAlarm)
+            contentValues.put(CalendarContract.Events.HAS_ALARM, 1);
+        //  设置提示规则
+        if (schedule.getRule() != null)
+            contentValues.put(CalendarContract.Events.RRULE, schedule.getRule());
+        return contentValues;
+
     }
 
     /**
@@ -253,6 +332,4 @@ public class CalendarEvent {
         Uri result = mContext.getContentResolver().insert(calendarUri, contentValues);
         return result == null ? -1 : ContentUris.parseId(result);
     }
-
-
 }

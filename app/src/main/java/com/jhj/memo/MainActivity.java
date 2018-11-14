@@ -5,9 +5,9 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
-import com.jhj.calendarevent.CalendarAccount;
+import com.jhj.calendarevent.model.CalendarAccount;
 import com.jhj.calendarevent.CalendarEvent;
-import com.jhj.calendarevent.ScheduleEventBean;
+import com.jhj.calendarevent.model.ScheduleEventBean;
 import com.jhj.permissionscheck.OnPermissionsListener;
 import com.jhj.permissionscheck.PermissionsRequest;
 
@@ -15,15 +15,16 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
+    long startMills = 1542184881123L;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        findViewById(R.id.textView).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btn_insert).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                insert();
                 new PermissionsRequest.Builder(MainActivity.this)
                         .requestPermissions(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
                         .callback(new OnPermissionsListener() {
@@ -38,19 +39,67 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        findViewById(R.id.btn_update).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new PermissionsRequest.Builder(MainActivity.this)
+                        .requestPermissions(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
+                        .callback(new OnPermissionsListener() {
+                            @Override
+                            public void onPermissions(List<String> list, List<String> list1) {
+                                if (list.size() == 0) {
+                                    update();
+                                }
+                            }
+                        })
+                        .build();
+            }
+        });
+
+
+        findViewById(R.id.btn_delete).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new PermissionsRequest.Builder(MainActivity.this)
+                        .requestPermissions(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
+                        .callback(new OnPermissionsListener() {
+                            @Override
+                            public void onPermissions(List<String> list, List<String> list1) {
+                                if (list.size() == 0) {
+                                    int a = CalendarEvent.delete(MainActivity.this, "title1", startMills);
+                                    if (a == -1) {
+                                        //删除失败
+                                    }
+                                }
+                            }
+                        })
+                        .build();
+            }
+        });
+
+    }
+
+    private void update() {
+        ScheduleEventBean bean = new ScheduleEventBean();
+        bean.setTitle("title1");
+        int a = CalendarEvent.update(this, "title", startMills, bean);
+        if (a == -1) {
+            //修改失败
+        }
     }
 
     private void insert() {
-        CalendarAccount account = new CalendarAccount().setCalendarName("calendarName")
-                .setCalendarAccountName("calendarAccountName")
-                .setCalendarAccountType("calendarAccountType");
+        CalendarAccount account = new CalendarAccount("calendarName", "calendarAccountName", "calendarAccountType");
         CalendarEvent.init(account);
         ScheduleEventBean bean = new ScheduleEventBean();
-        bean.setTitle("titel");
-        bean.setDescription("description");
-        bean.setLocation("location");
-        bean.setStartTime(System.currentTimeMillis() + 500000);
-        bean.setEndTime(System.currentTimeMillis() + 500000);
-        CalendarEvent.insert(this, "displayName", bean);
+        bean.setTitle("title")
+                .setDescription("description")
+                .setLocation("location")
+                .setStartTime(startMills)
+                .setEndTime(System.currentTimeMillis() + 500000);
+        boolean a = CalendarEvent.insert(this, "displayName", bean);
+        if (a) {
+            //添加成功
+        }
     }
 }
