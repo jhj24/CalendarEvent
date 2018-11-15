@@ -1,12 +1,12 @@
 # CalendarEvent
-###　１. 权限
+### １. 权限
 ```
 <uses-permission android:name="android.permission.READ_CALENDAR" />
 <uses-permission android:name="android.permission.WRITE_CALENDAR" />
 ```
 使用时还需动态申请
 
-### 方法
+### 2.方法
 - 可以在Application中初始化账户信息
 ```
 init(CalendarAccount account)
@@ -15,13 +15,14 @@ init(CalendarAccount account)
 ```
 setCalenderAlarmAheadTime(int aheadOfTime)
 ```
-```
 - 日历事件增、删、改、查
+
+```
 /**
 * 日历事件创建
 *
 * @param mContext    mContext
-* @param displayName 显示在日历上的名称
+* @param displayName 显示在日历上账户的名称
 * @param schedule    日历事件详情
 * @return　boolean 事件是否创建成功
 */
@@ -31,8 +32,8 @@ public static boolean insert(Context mContext, String displayName, ScheduleEvent
 * 日历事件修改
 *
 * @param mContext         Context
-* @param searchTitle      要搜索日历事件的标题
-* @param searchStartMills 　要搜索日历事件的开始时间
+* @param searchTitle      要修改日历事件的标题
+* @param searchStartMills 　要修改日历事件的开始时间
 * @param schedule         　日历事件详情
 * @return boolean 事件是否修改成功
 */
@@ -42,8 +43,8 @@ public static boolean update(Context mContext, String searchTitle, long searchSt
 * 根据id删除
 *
 * @param mContext         Context
-* @param searchTitle      要搜索日历事件的标题
-* @param searchStartMills 　要搜索日历事件的开始时间
+* @param searchTitle      要删除日历事件的标题
+* @param searchStartMills 　要删除日历事件的开始时间
 * @return boolean 事件是否删除成功
 */
 public static boolean delete(Context mContext, String searchTitle, long searchStartMills) 
