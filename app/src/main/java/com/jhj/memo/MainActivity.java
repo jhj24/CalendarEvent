@@ -4,6 +4,7 @@ import android.Manifest;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.widget.Toast;
 
 import com.jhj.calendarevent.CalendarEvent;
 import com.jhj.calendarevent.model.CalendarAccount;
@@ -67,8 +68,8 @@ public class MainActivity extends AppCompatActivity {
                             public void onPermissions(List<String> list, List<String> list1) {
                                 if (list.size() == 0) {
                                     boolean isSuccess = CalendarEvent.delete(MainActivity.this, "title1", startMills);
-                                    if (!isSuccess) {
-                                        //删除失败
+                                    if (isSuccess) {
+                                        Toast.makeText(MainActivity.this, "删除成功", Toast.LENGTH_SHORT).show();
                                     }
                                 }
                             }
@@ -83,8 +84,8 @@ public class MainActivity extends AppCompatActivity {
         ScheduleEventBean bean = new ScheduleEventBean();
         bean.setTitle("title1");
         boolean isSuccess = CalendarEvent.update(this, "title", startMills, bean);
-        if (!isSuccess) {
-            //修改失败
+        if (isSuccess) {
+            Toast.makeText(MainActivity.this, "修改成功", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -99,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
                 .setEndTime(System.currentTimeMillis() + 500000);
         boolean isSuccess = CalendarEvent.insert(this, "displayName", bean);
         if (isSuccess) {
-            //添加成功
+            Toast.makeText(MainActivity.this, "添加成功", Toast.LENGTH_SHORT).show();
         }
     }
 }
